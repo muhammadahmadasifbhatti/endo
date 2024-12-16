@@ -5,6 +5,8 @@
 
 /** @typedef {VirtualModuleSource & {cjsFunctor: string}} CjsModuleSource */
 
+import { join } from './node-module-specifier.js';
+
 /** quotes strings */
 const q = JSON.stringify;
 
@@ -21,16 +23,16 @@ const exportsCellRecord = exportsList =>
 
 // This function is serialized and references variables from its destination scope.
 const runtime = `\
-function wrapCjsFunctor(num) {
+function wrapCjsFunctor(index, functor) {
   /* eslint-disable no-undef */
   return ({ imports = {} }) => {
-    const moduleCells = cells[num];
+    const moduleCells = cells[index];
     const cModule = Object.freeze(
       Object.defineProperty({}, 'exports', moduleCells.default),
     );
     // TODO: specifier not found handling
     const requireImpl = specifier => cells[imports[specifier]].default.get();
-    functors[num](Object.freeze(requireImpl), cModule.exports, cModule);
+    functor(Object.freeze(requireImpl), cModule.exports, cModule);
     // Update all named cells from module.exports.
     Object.keys(moduleCells)
       .filter(k => k !== 'default' && k !== '*')
@@ -61,17 +63,27 @@ function wrapCjsFunctor(num) {
 /** @type {BundlerSupport<CjsModuleSource>} */
 export default {
   runtime,
-  getBundlerKit({
-    index,
-    indexedImports,
-    record: { cjsFunctor, exports: exportsList = {} },
-  }) {
+  getBundlerKit(
+    {
+      index,
+      indexedImports,
+      moduleSpecifier,
+      sourceDirname,
+      record: { cjsFunctor, exports: exportsList = {} },
+    },
+    { useEvaluate = false },
+  ) {
     const importsMap = JSON.stringify(indexedImports);
+
+    let functor = cjsFunctor;
+    if (useEvaluate) {
+      const sourceUrl = join(sourceDirname, moduleSpecifier);
+      functor = JSON.stringify([functor, sourceUrl]);
+    }
 
     return {
       getFunctor: () => `\
-// === functors[${index}] ===
-${cjsFunctor},
+${functor},
 `,
       getCells: () => `\
     {
@@ -79,9 +91,15 @@ ${exportsCellRecord(exportsList)}\
     },
 `,
       getReexportsWiring: () => '',
-      getFunctorCall: () => `\
-  wrapCjsFunctor(${index})({imports: ${importsMap}});
-`,
+      getFunctorCall: () => {
+        let functorExpression = `functors[${index}]`;
+        if (useEvaluate) {
+          functorExpression = `evaluateSource(...${functorExpression})`;
+        }
+        return `\
+  wrapCjsFunctor(${index}, ${functorExpression})({imports: ${importsMap}});
+`;
+      },
     };
   },
 };
