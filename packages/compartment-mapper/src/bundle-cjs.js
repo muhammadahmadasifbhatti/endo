@@ -1,7 +1,7 @@
 /* Provides CommonJS support for `bundle.js`. */
 
 /** @import {VirtualModuleSource} from 'ses' */
-/** @import {BundlerSupport} from './bundle.js' */
+/** @import {BundlerSupport} from './bundle-lite.js' */
 
 /** @typedef {VirtualModuleSource & {cjsFunctor: string}} CjsModuleSource */
 
