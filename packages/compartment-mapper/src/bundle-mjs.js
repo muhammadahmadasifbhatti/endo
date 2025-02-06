@@ -1,7 +1,7 @@
 /* Provides ESM support for `bundle.js`. */
 
 /** @import {PrecompiledModuleSource} from 'ses' */
-/** @import {BundlerSupport} from './bundle.js' */
+/** @import {BundlerSupport} from './bundle-lite.js' */
 
 import { join } from './node-module-specifier.js';
 
