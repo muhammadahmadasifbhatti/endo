@@ -185,6 +185,7 @@ export const makeHardener = () => {
         } catch (err) {
           if (isTypedArray(obj)) {
             freezeTypedArray(obj);
+            return;
           }
           throw err;
         }
