@@ -180,14 +180,10 @@ export const makeHardener = () => {
         // therefore this is a valid candidate.
         // Throws if this fails (strict mode).
         // Also throws if the object is an ArrayBuffer or any TypedArray.
-        try {
+        if (isTypedArray(obj)) {
+          freezeTypedArray(obj);
+        } else {
           freeze(obj);
-        } catch (err) {
-          if (isTypedArray(obj)) {
-            freezeTypedArray(obj);
-          } else {
-            throw err;
-          }
         }
 
         // we rely upon certain commitments of Object.freeze and proxies here
