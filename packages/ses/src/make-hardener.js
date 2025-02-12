@@ -56,8 +56,6 @@ import { assert } from './error/assert.js';
  * @import {Harden} from '../types.js'
  */
 
-const { constructor: TypedArray } = typedArrayPrototype;
-
 // Obtain the string tag accessor of of TypedArray so we can indirectly use the
 // TypedArray brand check it employs.
 const typedArrayToStringTag = getOwnPropertyDescriptor(
@@ -75,10 +73,6 @@ assert(getTypedArrayToStringTag);
  * @param {unknown} object
  */
 export const isTypedArray = object => {
-  if (!(object instanceof TypedArray)) {
-    // quicker reject for typical case
-    return false;
-  }
   // The object must pass a brand check or toStringTag will return undefined.
   const tag = apply(getTypedArrayToStringTag, object, []);
   return tag !== undefined;
@@ -186,10 +180,13 @@ export const makeHardener = () => {
         // therefore this is a valid candidate.
         // Throws if this fails (strict mode).
         // Also throws if the object is an ArrayBuffer or any TypedArray.
-        if (isTypedArray(obj)) {
-          freezeTypedArray(obj);
-        } else {
+        try {
           freeze(obj);
+        } catch (err) {
+          if (isTypedArray(obj)) {
+            freezeTypedArray(obj);
+          }
+          throw err;
         }
 
         // we rely upon certain commitments of Object.freeze and proxies here
