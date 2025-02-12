@@ -185,9 +185,9 @@ export const makeHardener = () => {
         } catch (err) {
           if (isTypedArray(obj)) {
             freezeTypedArray(obj);
-            return;
+          } else {
+            throw err;
           }
-          throw err;
         }
 
         // we rely upon certain commitments of Object.freeze and proxies here
